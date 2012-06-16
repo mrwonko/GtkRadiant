@@ -33,7 +33,7 @@ class Config:
 		# platforms for which to assemble a setup
 		self.setup_platforms = [ 'local', 'x86', 'x64', 'win32' ]
 		# paks to assemble in the setup
-		self.setup_packs = [ 'Q3Pack', 'UrTPack', ] # 'UFOAIPack', 'Q2WPack', 'ReactionPack' ]
+		self.setup_packs = [ 'Q3Pack', 'UrTPack', 'ETPack', ] # 'UFOAIPack', 'Q2WPack', 'ReactionPack' ]
 
 	def __repr__( self ):
 		return 'config: target=%s config=%s' % ( self.target_selected, self.config_selected )
@@ -150,44 +150,39 @@ class Config:
 				module = SConscript( os.path.join( build_dir, 'SConscript.module' ) )
 				Default( InstallAs( os.path.join( self.install_directory, 'modules/%s.so' % libname ), module ) )
 
-	def emit_q3map2( self ):
+	def emit_q3map2( self, urt = False ):
+                if ( urt ):
+                        compiler_name = 'q3map2.urt'
+                        sconscript_name = 'SConscript.q3map2.urt'
+                else:
+                        compiler_name = 'q3map2'
+                        sconscript_name = 'SConscript.q3map2'
 		settings = self
 		for config_name in self.config_selected:
 			config = {}
 			config['name'] = config_name
 			config['shared'] = False
-			Export( 'utils', 'settings', 'config' )
-			build_dir = os.path.join( 'build', config_name, 'q3map2' )
+			Export( 'utils', 'settings', 'config' )                        
+			build_dir = os.path.join( 'build', config_name, compiler_name )
 			VariantDir( build_dir, '.', duplicate = 0 )
 			lib_objects = []
 			for project in [ 'tools/quake3/common/quake3-common.vcproj', 'libs/mathlib/mathlib.vcproj', 'libs/l_net/l_net.vcproj', 'libs/ddslib/ddslib.vcproj', 'libs/picomodel/picomodel.vcproj', 'libs/md5lib/md5lib.vcproj' ]:
 				Export( 'project' )
 				lib_objects += SConscript( os.path.join( build_dir, 'SConscript.lib' ) )
 			Export( 'lib_objects' )
-			q3map2 = SConscript( os.path.join( build_dir, 'SConscript.q3map2' ) )
-			Default( InstallAs( os.path.join( self.install_directory, 'q3map2' ), q3map2 ) )
+
+                        q3map2 = SConscript( os.path.join( build_dir, sconscript_name ) )
+                        Default( InstallAs( os.path.join( self.install_directory, compiler_name ), q3map2 ) )
 
 
 	def emit( self ):
-		try:
-			self.target_selected.index( 'radiant' )
-		except:
-			pass
-		else:
-			self.emit_radiant()
-		try:
-			self.target_selected.index( 'q3map2' )
-		except:
-			pass
-		else:
-			self.emit_q3map2()
-
-		try:
-			self.target_selected.index( 'setup' )
-		except:
-			pass
-		else:
-			self.Setup()
+                if 'radiant' in self.target_selected:
+                        self.emit_radiant()
+                if 'q3map2' in self.target_selected:
+                        self.emit_q3map2( urt = False )
+                        self.emit_q3map2( urt = True )
+                if 'setup' in self.target_selected:
+                        self.Setup()
 
 	def SetupEnvironment( self, env, config, useGtk = False, useGtkGL = False, useJPEG = False, useZ = False, usePNG = False ):
 		env['CC'] = self.cc
